@@ -26,7 +26,7 @@ function redraw() {
   document.querySelector('span#hour-value').innerText = hour;
 
   const useTransition = document.querySelector('input#transition').checked;
-
+  const useDistortion = document.querySelector('input#distortion').checked;
   deck.setProps({layers: [
     new GraphLayer({
       data: graph,
@@ -46,7 +46,7 @@ function redraw() {
       ],
 
       transition: useTransition && 2000,
-
+      useDistortion,
       updateTriggers: {
         getEdgeValue: hour
       }
@@ -76,6 +76,6 @@ Promise.all([
 
   document.querySelector('input#hour').oninput = redraw;
   document.querySelector('input#transition').oninput = redraw;
-
+  document.querySelector('input#distortion').oninput = redraw;
   redraw();
 });

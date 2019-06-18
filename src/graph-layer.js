@@ -98,7 +98,7 @@ export default class GraphLayer extends CompositeLayer {
       nodeAttributesTransform.run({
         moduleParameters,
         nodeValueTexture: shortestPathTransform.nodeValueTexture,
-        distortion: iteration / MAX_ITERATIONS
+        distortion: this.props.useDistortion ? iteration / MAX_ITERATIONS : 0,
       });
       edgeAttributesTransform.run({
         nodePositionsBuffer: nodeAttributesTransform.nodePositionsBuffer
