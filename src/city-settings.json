@@ -1,0 +1,12 @@
+{
+  "san-francisco": {
+    "viewState": {
+      "longitude": -122.4192016,
+      "latitude": 37.7751543,
+      "zoom": 13,
+      "pitch": 0,
+      "bearing": 0
+    },
+    "sourceIndex": 311
+  }
+}
