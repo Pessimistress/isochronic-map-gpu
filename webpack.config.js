@@ -6,7 +6,6 @@ module.exports = {
 
   entry: {
     app: './src/app.js'
-  },
+  }
 
-  plugins: [new HtmlWebpackPlugin({title: 'deck.gl example'})]
 };

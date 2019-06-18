@@ -116,9 +116,9 @@ uniform sampler2D nodeValueSampler;
 
 in float edgeSourceIndices;
 in float edgeTargetIndices;
-in float edgeValues;
+in vec3 edgeValues;
 
-out float value;
+out vec3 value;
 
 ivec2 getVexelCoord(float index) {
   float y = floor(index / textureDims.x);
@@ -137,23 +137,22 @@ void main() {
   vec2 texCoord = getTexCoord(edgeTargetIndices);
   gl_Position = vec4(texCoord * 2.0 - 1.0, 0.0, 1.0);
 
-  float sourceValue = texelFetch(nodeValueSampler, getVexelCoord(edgeSourceIndices), 0).r;
+  vec3 sourceValue = texelFetch(nodeValueSampler, getVexelCoord(edgeSourceIndices), 0).rgb;
   value = sourceValue + edgeValues;
-  // value = sourceValue + 1.0;
 }
       `,
       fs: `#version 300 es
 precision highp float;
 #define MAX_VALUE 100000.0
 
-in float value;
+in vec3 value;
 out vec4 color;
 
 void main() {
-  if (value >= MAX_VALUE) {
+  if (value.r >= MAX_VALUE) {
     discard;
   }
-  color = vec4(value, value, value, 1.0);
+  color = vec4(value, 1.0);
 }
       `,
       drawMode: GL.POINTS

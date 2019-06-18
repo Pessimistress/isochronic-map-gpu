@@ -69,9 +69,7 @@ export default class NodePositionTransform {
     this._bufferChanged = false;
   }
 
-  run({moduleParameters, nodeValueTexture, distortion}) {
-    this._transform.model.updateModuleSettings(moduleParameters);
-
+  run({nodeValueTexture, distortion}) {
     this._transform.run({
       uniforms: {
         sourcePosition: this._sourcePosition,
@@ -114,13 +112,11 @@ ivec2 getVexelCoord(float index) {
 
 void main() {
   vec4 valuePixel = texelFetch(nodeValues, getVexelCoord(nodeIndices), 0);
-  float value = valuePixel.r;
+  float time = valuePixel.r;
+  float distance = valuePixel.g;
   float isValid = valuePixel.a;
 
-  // distance in meters
-  float distance = length((nodePositions - sourcePosition)
-   * project_uCommonUnitsPerWorldUnit.xy / project_uCommonUnitsPerMeter.xy);
-  float r = sqrt(value / distance * 20.);
+  float r = sqrt(time / distance * 30.);
   r = mix(1.0, r, distortion);
 
   // vec3 pos = vec3(nodePositions, r * 200.);
@@ -132,7 +128,7 @@ void main() {
   color = mix(color, RED, max(r - 1.0, 0.0));
   color = mix(color, BLACK, min(1.0, max(r - 2.0, 0.0)));
 
-  radius = pow(value, 0.75) * isValid;
+  radius = pow(time, 0.75) * isValid;
 }
 `,
       varyings: ['position', 'color', 'radius'],

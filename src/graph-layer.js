@@ -81,22 +81,17 @@ export default class GraphLayer extends CompositeLayer {
 
   animate() {
     if (this.state.iteration < MAX_ITERATIONS) {
-      const {transition} = this.props;
-      const {shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform} = this.state;
+      const {shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform, useTransition} = this.state;
       let {iteration} = this.state;
 
-      let targetIteration = transition ? MAX_ITERATIONS : iteration + 1;
+      let targetIteration = useTransition ? MAX_ITERATIONS : iteration + 1;
 
       while (iteration < targetIteration) {
         shortestPathTransform.run();
         iteration++;
       }
 
-      const moduleParameters = Object.assign(Object.create(this.props), {
-        viewport: this.context.viewport
-      });
       nodeAttributesTransform.run({
-        moduleParameters,
         nodeValueTexture: shortestPathTransform.nodeValueTexture,
         distortion: iteration / MAX_ITERATIONS
       });
@@ -105,7 +100,6 @@ export default class GraphLayer extends CompositeLayer {
       });
 
       this.setState({iteration});
-      this.setNeedsRedraw();
     }
     this.state.animation = requestAnimationFrame(this.animate.bind(this));
   }
@@ -114,7 +108,7 @@ export default class GraphLayer extends CompositeLayer {
     this.state.shortestPathTransform.reset(sourceIndex);
     this.state.nodeAttributesTransform.reset(sourceIndex);
     this.state.edgeAttributesTransform.reset(sourceIndex);
-    this.setState({iteration: 0});
+    this.setState({iteration: 0, useTransition: this.props.transition});
   }
 
   _getAttributes(gl) {
@@ -138,7 +132,7 @@ export default class GraphLayer extends CompositeLayer {
         accessor: 'getEdgeTarget'
       }),
       edgeValues: new Attribute(gl, {
-        size: 1,
+        size: 3,
         accessor: 'getEdgeValue'
       })
     };
@@ -149,6 +143,25 @@ export default class GraphLayer extends CompositeLayer {
     const {attributes, shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform} = this.state;
 
     return [
+      new EdgeLayer(this.getSubLayerProps({
+        id: 'edges',
+        data: data.edges,
+        getSourcePosition: d => [0, 0],
+        getTargetPosition: d => [0, 0],
+        getColor: [200, 200, 200],
+        widthScale: 3,
+
+        instanceSourcePositions: edgeAttributesTransform.sourcePositionsBuffer,
+        instanceTargetPositions: edgeAttributesTransform.targetPositionsBuffer,
+        instanceValid: edgeAttributesTransform.validityBuffer,
+
+        transitions: transition && {
+          getSourcePosition: transition,
+          getTargetPosition: transition,
+          getIsValid: transition
+        }
+      })),
+
       new NodeLayer(this.getSubLayerProps({
         id: 'nodes',
         data: data.nodes,
@@ -167,23 +180,6 @@ export default class GraphLayer extends CompositeLayer {
         pickable: true,
         autoHighlight: true,
         highlightColor: [0, 200, 255, 200]
-      })),
-
-      new EdgeLayer(this.getSubLayerProps({
-        id: 'edges',
-        data: data.edges,
-        getSourcePosition: d => [0, 0],
-        getTargetPosition: d => [0, 0],
-
-        instanceSourcePositions: edgeAttributesTransform.sourcePositionsBuffer,
-        instanceTargetPositions: edgeAttributesTransform.targetPositionsBuffer,
-        instanceValid: edgeAttributesTransform.validityBuffer,
-
-        transitions: transition && {
-          getSourcePosition: transition,
-          getTargetPosition: transition,
-          getIsValid: transition
-        }
       }))
     ]
   }

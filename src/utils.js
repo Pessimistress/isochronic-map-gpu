@@ -49,3 +49,16 @@ export function getFloatTexture(gl, size) {
     height: 1
   });
 }
+
+export function walk(graph, startNode, maxDepth = 10, depth = 0) {
+  if (startNode.visited || depth > maxDepth) {
+    return;
+  }
+  startNode.visited = true;
+  for (const edgeId in graph.edges) {
+    const edge = graph.edges[edgeId];
+    if (edge.hours[0] && edge.start_junction_id === startNode.id) {
+      walk(graph, graph.nodesById[edge.end_junction_id], maxDepth, depth + 1);
+    }
+  }
+};
