@@ -69,12 +69,13 @@ export default class NodePositionTransform {
     this._bufferChanged = false;
   }
 
-  run({moduleParameters, nodeValueTexture, distortion}) {
+  run({moduleParameters, mode, nodeValueTexture, distortion}) {
     this._transform.model.updateModuleSettings(moduleParameters);
     this._transform.run({
       uniforms: {
         sourcePosition: this._sourcePosition,
         nodeValues: nodeValueTexture,
+        mode,
         distortion,
         textureDims: [nodeValueTexture.width, nodeValueTexture.height]
       }
@@ -88,9 +89,16 @@ export default class NodePositionTransform {
     return new Transform(gl, {
       vs: `\
 #version 300 es
+
+#define MODE_NONE 0
+#define MODE_NODE_DISTANCE 1
+#define MODE_TRAFFIC 2
+#define MODE_ISOCHRONIC 3
+
 in vec2 nodePositions;
 in float nodeIndices;
 
+uniform int mode;
 uniform sampler2D nodeValues;
 uniform vec2 textureDims;
 uniform vec2 sourcePosition;
@@ -112,29 +120,50 @@ ivec2 getVexelCoord(float index) {
   return ivec2(x, y);
 }
 
+vec4 colorScale(float r) {
+  vec4 c = mix(GREEN, YELLOW, r);
+  c = mix(c, RED, max(r - 1.0, 0.0));
+  c = mix(c, BLACK, min(1.0, max(r - 2.0, 0.0)));
+  return c;
+}
+
 void main() {
   vec4 valuePixel = texelFetch(nodeValues, getVexelCoord(nodeIndices), 0);
-  float time = valuePixel.r;
-  float distance = valuePixel.g;
+  float travelTime = valuePixel.r;
+  float streetDistance = valuePixel.g;
+  float nodeDistance = valuePixel.b;
   float isValid = valuePixel.a;
-  float geoDistance = length((nodePositions - sourcePosition) * project_uCommonUnitsPerWorldUnit.xy / project_uCommonUnitsPerMeter.xy);
 
-  float r = time / geoDistance * 30.;
-  r = mix(1.0, r, distortion);
-  r = mix(0.0, r, isValid);
+  position = vec4(nodePositions, 0.0, isValid);
+  color = GRAY;
+  radius = 10.;
 
-  // vec3 pos = vec3(nodePositions, r * 400.);
-  vec3 pos = vec3(mix(sourcePosition, nodePositions, r), 0.0);
+  if (mode == MODE_NONE) {
+    radius = mix(radius, 20., isValid);
 
-  position = vec4(pos, isValid);
+  } else if (mode == MODE_NODE_DISTANCE) {
 
-  color = mix(GREEN, YELLOW, r);
-  color = mix(color, RED, max(r - 1.0, 0.0));
-  color = mix(color, BLACK, min(1.0, max(r - 2.0, 0.0)));
-  color = mix(GRAY, color, isValid);
+    color = mix(color, BLACK, isValid);
+    radius = mix(radius, sqrt(nodeDistance) * 5., isValid);
 
-  radius = pow(time, 0.7);
-  radius = mix(10., radius, isValid);
+  } else if (mode == MODE_TRAFFIC) {
+
+    float r = travelTime / streetDistance * 30.;
+    r = mix(0.0, r, distortion * isValid);
+    position.z = r * 400.;
+    radius = mix(radius, pow(travelTime, 0.7), isValid);
+    color = mix(GRAY, colorScale(r), isValid);
+
+  } else if (mode == MODE_ISOCHRONIC) {
+
+    float geoDistance = length((nodePositions - sourcePosition) * project_uCommonUnitsPerWorldUnit.xy / project_uCommonUnitsPerMeter.xy);
+    float r = travelTime / geoDistance * 15.;
+    r = mix(1.0, r, distortion * isValid);
+    position.xy = mix(sourcePosition, nodePositions, r);
+    radius = mix(radius, sqrt(travelTime) * 2., isValid);
+    color = mix(GRAY, colorScale(r), isValid);
+
+  }
 }
 `,
       varyings: ['position', 'color', 'radius'],

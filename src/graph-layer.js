@@ -23,6 +23,13 @@ import EdgeLayer from './edge-layer';
 
 const MAX_ITERATIONS = 100;
 
+const MODE = {
+  NONE: 0,
+  NODE_DISTANCE: 1,
+  TRAFFIC: 2,
+  ISOCHRONIC: 3
+};
+
 export default class GraphLayer extends CompositeLayer {
 
   initializeState({gl}) {
@@ -38,9 +45,9 @@ export default class GraphLayer extends CompositeLayer {
 
   updateState({props, oldProps, changeFlags}) {
     const dataChanged = changeFlags.dataChanged || changeFlags.updateTriggersChanged;
+    const {attributes, shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform} = this.state;
 
     if (props.data && dataChanged) {
-      const {attributes, shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform} = this.state;
       const nodeCount = props.data.nodes.length;
       const edgeCount = props.data.edges.length;
 
@@ -69,7 +76,16 @@ export default class GraphLayer extends CompositeLayer {
     }
 
     if (dataChanged || props.sourceIndex !== oldProps.sourceIndex) {
-      this.setSourceIndex(props.sourceIndex);
+      shortestPathTransform.reset(props.sourceIndex);
+      nodeAttributesTransform.reset(props.sourceIndex);
+      edgeAttributesTransform.reset(props.sourceIndex);
+      this.setState({iteration: 0});
+    }
+
+    if (props.mode !== oldProps.mode && this.state.iteration === MAX_ITERATIONS) {
+      nodeAttributesTransform.reset(props.sourceIndex);
+      edgeAttributesTransform.reset(props.sourceIndex);
+      this._updateAttributes();
     }
   }
 
@@ -81,39 +97,35 @@ export default class GraphLayer extends CompositeLayer {
 
   animate() {
     if (this.state.iteration < MAX_ITERATIONS) {
-      const {shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform, useTransition} = this.state;
+      const {shortestPathTransform} = this.state;
       let {iteration} = this.state;
 
-      let targetIteration = useTransition ? MAX_ITERATIONS : iteration + 1;
+      shortestPathTransform.run();
 
-      while (iteration < targetIteration) {
-        shortestPathTransform.run();
-        iteration++;
-      }
-
-      const moduleParameters = Object.assign(Object.create(this.props), {
-        viewport: this.context.viewport
-      });
-
-      nodeAttributesTransform.run({
-        moduleParameters,
-        nodeValueTexture: shortestPathTransform.nodeValueTexture,
-        distortion: this.props.useDistortion ? iteration / MAX_ITERATIONS : 0,
-      });
-      edgeAttributesTransform.run({
-        nodePositionsBuffer: nodeAttributesTransform.nodePositionsBuffer
-      });
-
-      this.setState({iteration});
+      this.setState({iteration: iteration + 1});
+      this._updateAttributes();
     }
-    this.state.animation = requestAnimationFrame(this.animate.bind(this));
+
+    // Try bind the callback to the latest version of the layer
+    this.state.animation = requestAnimationFrame(this.animate.bind(this.state.layer || this));
   }
 
-  setSourceIndex(sourceIndex) {
-    this.state.shortestPathTransform.reset(sourceIndex);
-    this.state.nodeAttributesTransform.reset(sourceIndex);
-    this.state.edgeAttributesTransform.reset(sourceIndex);
-    this.setState({iteration: 0, useTransition: this.props.transition});
+  _updateAttributes() {
+    const {shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform} = this.state;
+
+    const moduleParameters = Object.assign(Object.create(this.props), {
+      viewport: this.context.viewport
+    });
+
+    nodeAttributesTransform.run({
+      moduleParameters,
+      mode: this.props.mode,
+      nodeValueTexture: shortestPathTransform.nodeValueTexture,
+      distortion: this.state.iteration / MAX_ITERATIONS
+    });
+    edgeAttributesTransform.run({
+      nodePositionsBuffer: nodeAttributesTransform.nodePositionsBuffer
+    });
   }
 
   _getAttributes(gl) {
@@ -189,3 +201,7 @@ export default class GraphLayer extends CompositeLayer {
     ]
   }
 }
+
+GraphLayer.defaultProps = {
+  mode: MODE.NODE_DISTANCE
+};

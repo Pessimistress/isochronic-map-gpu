@@ -8,7 +8,7 @@ export default class EdgeLayer extends LineLayer {
 attribute float instanceValid;
 `,
       'vs:#main-end': `
-vColor.a *= instanceValid;
+vColor.a *= instanceValid + 0.1;
 `
     };
     return shaders;
