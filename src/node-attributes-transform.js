@@ -69,7 +69,8 @@ export default class NodePositionTransform {
     this._bufferChanged = false;
   }
 
-  run({nodeValueTexture, distortion}) {
+  run({moduleParameters, nodeValueTexture, distortion}) {
+    this._transform.model.updateModuleSettings(moduleParameters);
     this._transform.run({
       uniforms: {
         sourcePosition: this._sourcePosition,
@@ -103,6 +104,7 @@ const vec4 GREEN = vec4(0., 255., 0., 255.);
 const vec4 YELLOW = vec4(255., 255., 0., 255.);
 const vec4 RED = vec4(255., 0., 0., 255.);
 const vec4 BLACK = vec4(0., 0., 0., 255.);
+const vec4 GRAY = vec4(200., 200., 200., 100.);
 
 ivec2 getVexelCoord(float index) {
   float y = floor(index / textureDims.x);
@@ -115,11 +117,13 @@ void main() {
   float time = valuePixel.r;
   float distance = valuePixel.g;
   float isValid = valuePixel.a;
+  float geoDistance = length((nodePositions - sourcePosition) * project_uCommonUnitsPerWorldUnit.xy / project_uCommonUnitsPerMeter.xy);
 
-  float r = sqrt(time / distance * 30.);
+  float r = time / geoDistance * 30.;
   r = mix(1.0, r, distortion);
+  r = mix(0.0, r, isValid);
 
-  // vec3 pos = vec3(nodePositions, r * 200.);
+  // vec3 pos = vec3(nodePositions, r * 400.);
   vec3 pos = vec3(mix(sourcePosition, nodePositions, r), 0.0);
 
   position = vec4(pos, isValid);
@@ -127,8 +131,10 @@ void main() {
   color = mix(GREEN, YELLOW, r);
   color = mix(color, RED, max(r - 1.0, 0.0));
   color = mix(color, BLACK, min(1.0, max(r - 2.0, 0.0)));
+  color = mix(GRAY, color, isValid);
 
-  radius = pow(time, 0.75) * isValid;
+  radius = pow(time, 0.7);
+  radius = mix(10., radius, isValid);
 }
 `,
       varyings: ['position', 'color', 'radius'],

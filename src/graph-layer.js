@@ -91,7 +91,12 @@ export default class GraphLayer extends CompositeLayer {
         iteration++;
       }
 
+      const moduleParameters = Object.assign(Object.create(this.props), {
+        viewport: this.context.viewport
+      });
+
       nodeAttributesTransform.run({
+        moduleParameters,
         nodeValueTexture: shortestPathTransform.nodeValueTexture,
         distortion: iteration / MAX_ITERATIONS
       });
@@ -119,7 +124,7 @@ export default class GraphLayer extends CompositeLayer {
       }),
       nodeIndices: new Attribute(gl, {
         size: 1,
-        accessor: (_, {index}) => index
+        accessor: 'getNodeIndex'
       }),
       edgeSourceIndices: new Attribute(gl, {
         size: 1,

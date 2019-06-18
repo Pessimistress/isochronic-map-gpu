@@ -36,11 +36,13 @@ function redraw() {
         redraw();
       },
       getNodePosition: d => [d.lon, d.lat],
+      getNodeIndex: d => d.index,
       getEdgeSource: d => graph.nodesById[d.start_junction_id].index,
       getEdgeTarget: d => graph.nodesById[d.end_junction_id].index,
       getEdgeValue: d => [
         d.hours[hour] ? d.hours[hour].time : 1e6,
-        d.distance
+        d.distance,
+        1
       ],
 
       transition: useTransition && 2000,

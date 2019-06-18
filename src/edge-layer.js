@@ -6,16 +6,9 @@ export default class EdgeLayer extends LineLayer {
     shaders.inject = {
       'vs:#decl': `
 attribute float instanceValid;
-varying float isValid;
 `,
-      'vs:#main-start': `
-isValid = instanceValid;
-`,
-      'fs:#decl': `
-varying float isValid;
-`,
-      'fs:#main-start': `
-if (isValid < 1.0) discard;
+      'vs:#main-end': `
+vColor.a *= instanceValid;
 `
     };
     return shaders;
