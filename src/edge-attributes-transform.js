@@ -1,5 +1,5 @@
-import {Buffer, Texture2D, Transform} from '@luma.gl/core';
-import {getFloatTexture, getTextureSize, getTexelCoord} from './utils';
+import {Buffer, Transform} from '@luma.gl/core';
+import {getFloatTexture, getTextureSize} from './utils';
 
 export default class EdgePositionTransform {
   constructor(gl) {

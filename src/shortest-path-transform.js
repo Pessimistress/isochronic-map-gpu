@@ -4,7 +4,7 @@ import {
   Framebuffer,
   clear,
   readPixelsToBuffer,
-  readPixelsToArray
+  // readPixelsToArray
 } from '@luma.gl/core';
 import GL from '@luma.gl/constants';
 
@@ -59,7 +59,7 @@ export default class ShortestPathTransform {
   }
 
   reset(sourceIndex) {
-    const {gl, nodeValueFramebuffer, nodeValueTextures, nodeValueBuffer} = this;
+    const {gl, nodeValueFramebuffer, nodeValueTextures} = this;
 
     for (const texture of nodeValueTextures) {
       nodeValueFramebuffer.attach({

@@ -1,19 +1,7 @@
 import {CompositeLayer} from '@deck.gl/core';
 import Attribute from '@deck.gl/core/dist/esm/lib/attribute';
-import {
-  Buffer,
-  Model,
-  Framebuffer,
-  clear,
-  readPixelsToBuffer,
-  readPixelsToArray,
-  Texture2D
-} from '@luma.gl/core';
 import GL from '@luma.gl/constants';
 
-import {ScatterplotLayer, LineLayer} from '@deck.gl/layers';
-
-import {getFloatTexture, getTextureSize} from './utils';
 import ShortestPathTransform from './shortest-path-transform';
 import EdgeAttributesTransform from './edge-attributes-transform';
 import NodeAttributesTransform from './node-attributes-transform';
@@ -157,7 +145,7 @@ export default class GraphLayer extends CompositeLayer {
 
   renderLayers() {
     const {data, getNodePosition, transition} = this.props;
-    const {attributes, shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform} = this.state;
+    const {nodeAttributesTransform, edgeAttributesTransform} = this.state;
 
     return [
       new EdgeLayer(this.getSubLayerProps({
