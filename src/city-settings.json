@@ -1,0 +1,62 @@
+{
+  "san-francisco": {
+    "viewState": {
+      "longitude": -122.4192016,
+      "latitude": 37.7751543,
+      "zoom": 13,
+      "pitch": 0,
+      "bearing": 0
+    },
+    "sourceIndex": 311
+  },
+  "london": {
+    "sourceIndex": 0,
+    "viewState": {
+      "longitude": -121.8901406,
+      "latitude": 47.5395821,
+      "zoom": 13,
+      "pitch": 0,
+      "bearing": 0
+    }
+  },
+  "new-york": {
+    "sourceIndex": 58689,
+    "viewState": {
+      "longitude": -73.99631284699134,
+      "latitude": 40.751282117425305,
+      "zoom": 13,
+      "pitch": 0,
+      "bearing": 0
+    }
+  },
+  "seattle": {
+    "sourceIndex": 164774,
+    "viewState": {
+     "latitude": 47.609854351617166,
+      "longitude": -122.33501190313953,
+      "zoom": 13,
+      "pitch": 0,
+      "bearing": 0
+    }
+  },
+  "cincinnati": {
+    "sourceIndex": 0,
+    "viewState": {
+      "longitude": -121.8901406,
+      "latitude": 47.5395821,
+      "zoom": 13,
+      "pitch": 0,
+      "bearing": 0
+    }
+  },
+  "nairobi": {
+    "sourceIndex": 66128,
+    "viewState": {
+      "longitude": 36.83826517042474,
+      "latitude": -1.2575046956236446,
+      "zoom": 13,
+      "pitch": 0,
+      "bearing": 0
+    }
+  }
+}

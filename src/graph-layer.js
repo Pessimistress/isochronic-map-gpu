@@ -21,7 +21,7 @@ import NodeAttributesTransform from './node-attributes-transform';
 import NodeLayer from './node-layer';
 import EdgeLayer from './edge-layer';
 
-const MAX_ITERATIONS = 100;
+const MAX_ITERATIONS = 500;
 
 const MODE = {
   NONE: 0,
@@ -121,7 +121,7 @@ export default class GraphLayer extends CompositeLayer {
       moduleParameters,
       mode: this.props.mode,
       nodeValueTexture: shortestPathTransform.nodeValueTexture,
-      distortion: this.state.iteration / MAX_ITERATIONS
+      distortion: Math.min(100, this.state.iteration) / Math.min(100, MAX_ITERATIONS)
     });
     edgeAttributesTransform.run({
       nodePositionsBuffer: nodeAttributesTransform.nodePositionsBuffer
