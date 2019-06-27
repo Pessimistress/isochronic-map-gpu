@@ -3,8 +3,8 @@ import {
   Model,
   Framebuffer,
   clear,
-  readPixelsToBuffer,
-  readPixelsToArray
+  // readPixelsToArray,
+  readPixelsToBuffer
 } from '@luma.gl/core';
 import GL from '@luma.gl/constants';
 
@@ -59,7 +59,7 @@ export default class ShortestPathTransform {
   }
 
   reset(sourceIndex) {
-    const {gl, nodeValueFramebuffer, nodeValueTextures, nodeValueBuffer} = this;
+    const {gl, nodeValueFramebuffer, nodeValueTextures} = this;
 
     for (const texture of nodeValueTextures) {
       nodeValueFramebuffer.attach({
@@ -143,7 +143,7 @@ void main() {
       `,
       fs: `#version 300 es
 precision highp float;
-#define MAX_VALUE 100000.0
+#define MAX_VALUE 1000000.0
 
 in vec3 value;
 out vec4 color;

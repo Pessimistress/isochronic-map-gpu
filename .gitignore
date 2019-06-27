@@ -3,6 +3,7 @@ dist/
 node_modules/
 coverage/
 test/
+data/
 TODO
 
 */**/yarn.lock

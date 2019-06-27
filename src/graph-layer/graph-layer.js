@@ -1,27 +1,17 @@
-import {CompositeLayer} from '@deck.gl/core';
+import {CompositeLayer, COORDINATE_SYSTEM} from '@deck.gl/core';
 import Attribute from '@deck.gl/core/dist/esm/lib/attribute';
-import {
-  Buffer,
-  Model,
-  Framebuffer,
-  clear,
-  readPixelsToBuffer,
-  readPixelsToArray,
-  Texture2D
-} from '@luma.gl/core';
+
 import GL from '@luma.gl/constants';
 
-import {ScatterplotLayer, LineLayer} from '@deck.gl/layers';
-
-import {getFloatTexture, getTextureSize} from './utils';
 import ShortestPathTransform from './shortest-path-transform';
 import EdgeAttributesTransform from './edge-attributes-transform';
 import NodeAttributesTransform from './node-attributes-transform';
 
+import {ScatterplotLayer, TextLayer} from '@deck.gl/layers';
 import NodeLayer from './node-layer';
 import EdgeLayer from './edge-layer';
 
-const MAX_ITERATIONS = 500;
+import {TRANSITION_FRAMES, ISOCHRONIC_SCALE, ISOCHRONIC_RINGS} from './constants';
 
 const MODE = {
   NONE: 0,
@@ -38,7 +28,9 @@ export default class GraphLayer extends CompositeLayer {
       nodeAttributesTransform: new NodeAttributesTransform(gl),
       edgeAttributesTransform: new EdgeAttributesTransform(gl),
       shortestPathTransform: new ShortestPathTransform(gl),
-      iteration: MAX_ITERATIONS,
+      transitionDuration: 0,
+      iteration: Infinity,
+      lastAttributeChange: -1,
       animation: requestAnimationFrame(this.animate.bind(this))
     });
   }
@@ -73,19 +65,25 @@ export default class GraphLayer extends CompositeLayer {
       shortestPathTransform.update({nodeCount, edgeCount, attributes});
       nodeAttributesTransform.update({nodeCount, edgeCount, attributes});
       edgeAttributesTransform.update({nodeCount, edgeCount, attributes});
+
+      this.setState({
+        transitionDuration: edgeCount,
+        maxIterations: Math.ceil(Math.sqrt(nodeCount)) + TRANSITION_FRAMES
+      });
     }
 
     if (dataChanged || props.sourceIndex !== oldProps.sourceIndex) {
       shortestPathTransform.reset(props.sourceIndex);
       nodeAttributesTransform.reset(props.sourceIndex);
       edgeAttributesTransform.reset(props.sourceIndex);
-      this.setState({iteration: 0});
-    }
-
-    if (props.mode !== oldProps.mode && this.state.iteration === MAX_ITERATIONS) {
-      nodeAttributesTransform.reset(props.sourceIndex);
-      edgeAttributesTransform.reset(props.sourceIndex);
-      this._updateAttributes();
+      this.setState({iteration: 0, lastAttributeChange: 0});
+    } else if (props.mode !== oldProps.mode) {
+      nodeAttributesTransform.update();
+      edgeAttributesTransform.update();
+      if (this.state.iteration >= this.state.maxIterations) {
+        this._updateAttributes();
+      }
+      this.setState({lastAttributeChange: this.state.iteration});
     }
   }
 
@@ -96,32 +94,31 @@ export default class GraphLayer extends CompositeLayer {
   }
 
   animate() {
-    if (this.state.iteration < MAX_ITERATIONS) {
+    if (this.state.iteration < this.state.maxIterations) {
       const {shortestPathTransform} = this.state;
-      let {iteration} = this.state;
 
       shortestPathTransform.run();
 
-      this.setState({iteration: iteration + 1});
       this._updateAttributes();
     }
-
+    this.state.iteration++;
     // Try bind the callback to the latest version of the layer
-    this.state.animation = requestAnimationFrame(this.animate.bind(this.state.layer || this));
+    this.state.animation = requestAnimationFrame(this.animate.bind(this));
   }
 
   _updateAttributes() {
-    const {shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform} = this.state;
+    const {shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform, iteration} = this.state;
+    const props = this.getCurrentLayer().props;
 
-    const moduleParameters = Object.assign(Object.create(this.props), {
+    const moduleParameters = Object.assign(Object.create(props), {
       viewport: this.context.viewport
     });
 
     nodeAttributesTransform.run({
       moduleParameters,
-      mode: this.props.mode,
+      mode: props.mode,
       nodeValueTexture: shortestPathTransform.nodeValueTexture,
-      distortion: Math.min(100, this.state.iteration) / Math.min(100, MAX_ITERATIONS)
+      distortion: Math.min(iteration / TRANSITION_FRAMES, 1)
     });
     edgeAttributesTransform.run({
       nodePositionsBuffer: nodeAttributesTransform.nodePositionsBuffer
@@ -155,9 +152,64 @@ export default class GraphLayer extends CompositeLayer {
     };
   }
 
+  // Hack: we're using attribute transition with a moving target, so instead of
+  // interpolating linearly within duration we make duration really long and
+  // hijack the progress calculation with this easing function
+  // Can probably remove when constant speed transition is implemented
+  _transitionEasing(t) {
+    const {iteration, lastAttributeChange} = this.state;
+
+    const ticks = iteration - lastAttributeChange;
+    if (ticks <= TRANSITION_FRAMES) {
+      return ticks / TRANSITION_FRAMES;
+    }
+    return 1;
+  }
+
+  _getIsochronicRings() {
+    const {data, getNodePosition, sourceIndex, mode} = this.props;
+
+    const sourcePosition = getNodePosition(data.nodes[sourceIndex]);
+
+    return mode === MODE.ISOCHRONIC && [
+      new ScatterplotLayer(this.getSubLayerProps({
+        id: 'isochronic-rings-circle',
+        data: ISOCHRONIC_RINGS,
+        filled: false,
+        stroked: true,
+        lineWidthMinPixels: 1,
+
+        coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
+        coordinateOrigin: sourcePosition,
+
+        getPosition: d => [0, 0],
+        getRadius: d => d * ISOCHRONIC_SCALE,
+        getLineColor: [0, 128, 255]
+      })),
+      new TextLayer(this.getSubLayerProps({
+        id: 'isochronic-rings-legend',
+        data: ISOCHRONIC_RINGS,
+
+        coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
+        coordinateOrigin: sourcePosition,
+
+        getTextAnchor: 'start',
+        getPosition: d => [d * ISOCHRONIC_SCALE, 0],
+        getText: d => ` ${d / 60} min`,
+        getSize: 20,
+        getColor: [0, 128, 255]
+      }))
+    ];
+  }
+
   renderLayers() {
-    const {data, getNodePosition, transition} = this.props;
-    const {attributes, shortestPathTransform, nodeAttributesTransform, edgeAttributesTransform} = this.state;
+    const {data, getNodePosition} = this.props;
+    const {nodeAttributesTransform, edgeAttributesTransform, transitionDuration} = this.state;
+
+    const transition = this.props.transition && {
+      duration: transitionDuration,
+      easing: this._transitionEasing.bind(this)
+    };
 
     return [
       new EdgeLayer(this.getSubLayerProps({
@@ -197,11 +249,18 @@ export default class GraphLayer extends CompositeLayer {
         pickable: true,
         autoHighlight: true,
         highlightColor: [0, 200, 255, 200]
-      }))
+      })),
+
+      this._getIsochronicRings()
     ]
   }
 }
 
 GraphLayer.defaultProps = {
-  mode: MODE.NODE_DISTANCE
+  mode: MODE.NODE_DISTANCE,
+  getNodePosition: {type: 'accessor'},
+  getNodeIndex: {type: 'accessor'},
+  getEdgeSource: {type: 'accessor'},
+  getEdgeTarget: {type: 'accessor'},
+  getEdgeValue: {type: 'accessor'}
 };

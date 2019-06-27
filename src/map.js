@@ -1,8 +1,8 @@
 import React from "react";
 import DeckGL from "deck.gl";
-import GraphLayer from './graph-layer.js';
+import GraphLayer from './graph-layer/graph-layer.js';
 
-const Map = ({viewState, graph, mode, setSourceIndex, setViewState, transition, hour, sourceIndex}) => (
+const Map = ({viewState, graph, mode, setSourceIndex, setViewState, hour, sourceIndex}) => (
   <div>
     <DeckGL
       viewState={viewState}
@@ -23,18 +23,18 @@ const Map = ({viewState, graph, mode, setSourceIndex, setViewState, transition, 
              setSourceIndex(index);
           },
           getNodePosition: d => [d.lon, d.lat],
-          getNodeIndex: d => d.index,
-          getEdgeSource: d => graph.nodesById[d.start_junction_id].index,
-          getEdgeTarget: d => graph.nodesById[d.end_junction_id].index,
+          getNodeIndex: (d, {index}) => index,
+          getEdgeSource: d => d.start,
+          getEdgeTarget: d => d.end,
           getEdgeValue: d => [
-            d.hours[hour] ? d.hours[hour].time : 1e6,
+            d.times_by_hour[hour] || 1e6,
             d.distance,
             1
           ],
 
           mode,
 
-          transition: transition && 2000,
+          transition: true,
 
           updateTriggers: {
             getEdgeValue: hour

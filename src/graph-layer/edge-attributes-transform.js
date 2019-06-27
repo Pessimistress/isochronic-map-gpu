@@ -1,19 +1,19 @@
-import {Buffer, Texture2D, Transform} from '@luma.gl/core';
-import {getFloatTexture, getTextureSize, getTexelCoord} from './utils';
+import {Buffer, Transform} from '@luma.gl/core';
+import {getFloatTexture, getTextureSize} from './utils';
 
 export default class EdgePositionTransform {
   constructor(gl) {
     this._sourcePositionsBuffer = [
-      new Buffer(gl, {size: 3, byteLength: 12}),
-      new Buffer(gl, {size: 3, byteLength: 12})
+      new Buffer(gl, {accessor: {size: 3}, byteLength: 12}),
+      new Buffer(gl, {accessor: {size: 3}, byteLength: 12})
     ];
     this._targetPositionsBuffer = [
-      new Buffer(gl, {size: 3, byteLength: 12}),
-      new Buffer(gl, {size: 3, byteLength: 12})
+      new Buffer(gl, {accessor: {size: 3}, byteLength: 12}),
+      new Buffer(gl, {accessor: {size: 3}, byteLength: 12})
     ];
     this._validityBuffer = [
-      new Buffer(gl, {size: 1, byteLength: 4}),
-      new Buffer(gl, {size: 1, byteLength: 4})
+      new Buffer(gl, {accessor: {size: 1}, byteLength: 4}),
+      new Buffer(gl, {accessor: {size: 1}, byteLength: 4})
     ];
 
     this.nodePositionsTexture = getFloatTexture(gl, 4);

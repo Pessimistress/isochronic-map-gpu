@@ -1,19 +1,21 @@
-import {Buffer, Texture2D, Transform} from '@luma.gl/core';
-import {getFloatTexture, getTextureSize, getTexelCoord} from './utils';
+import {Buffer, Transform} from '@luma.gl/core';
+import {getTextureSize} from './utils';
+
+import {ISOCHRONIC_SCALE} from './constants';
 
 export default class NodePositionTransform {
   constructor(gl) {
     this._nodePositionsBuffer = [
-      new Buffer(gl, {size: 4, byteLength: 12}),
-      new Buffer(gl, {size: 4, byteLength: 12})
+      new Buffer(gl, {accessor: {size: 4}, byteLength: 12}),
+      new Buffer(gl, {accessor: {size: 4}, byteLength: 12})
     ];
     this._nodeColorsBuffer = [
-      new Buffer(gl, {size: 4, byteLength: 16}),
-      new Buffer(gl, {size: 4, byteLength: 16})
+      new Buffer(gl, {accessor: {size: 4}, byteLength: 16}),
+      new Buffer(gl, {accessor: {size: 4}, byteLength: 16})
     ];
     this._nodeRadiusBuffer = [
-      new Buffer(gl, {size: 1, byteLength: 4}),
-      new Buffer(gl, {size: 1, byteLength: 4})
+      new Buffer(gl, {accessor: {size: 1}, byteLength: 4}),
+      new Buffer(gl, {accessor: {size: 1}, byteLength: 4})
     ];
 
     this._swapBuffer = false;
@@ -138,29 +140,26 @@ void main() {
   color = GRAY;
   radius = 10.;
 
-  if (mode == MODE_NONE) {
-    radius = mix(radius, 20., isValid);
-
-  } else if (mode == MODE_NODE_DISTANCE) {
+  if (mode == MODE_NODE_DISTANCE) {
 
     color = mix(color, BLACK, isValid);
     radius = mix(radius, sqrt(nodeDistance) * 5., isValid);
 
   } else if (mode == MODE_TRAFFIC) {
 
-    float r = travelTime / streetDistance * 30.;
+    float r = travelTime / streetDistance * 12.;
     r = mix(0.0, r, distortion * isValid);
     position.z = r * 400.;
-    radius = mix(radius, pow(travelTime, 0.7), isValid);
+    radius = mix(radius, radius * 3.0, isValid);
     color = mix(GRAY, colorScale(r), isValid);
 
   } else if (mode == MODE_ISOCHRONIC) {
 
     float geoDistance = length((nodePositions - sourcePosition) * project_uCommonUnitsPerWorldUnit.xy / project_uCommonUnitsPerMeter.xy);
-    float r = travelTime / geoDistance * 15.;
+    float r = travelTime / geoDistance * ${ISOCHRONIC_SCALE.toFixed(1)};
     r = mix(1.0, r, distortion * isValid);
     position.xy = mix(sourcePosition, nodePositions, r);
-    radius = mix(radius, sqrt(travelTime) * 2., isValid);
+    radius = mix(radius, radius * 3.0, isValid);
     color = mix(GRAY, colorScale(r), isValid);
 
   }

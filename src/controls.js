@@ -3,7 +3,6 @@ import {Select} from 'baseui/select';
 import {Block} from 'baseui/block';
 import {FormControl} from 'baseui/form-control';
 import {Slider} from 'baseui/slider';
-import {Checkbox} from 'baseui/checkbox';
 
 const cities = [
   {value: 'cincinnati', label: 'Cincinnati'},
@@ -17,26 +16,19 @@ const cities = [
 const mapTypes = [
   {value: 0, label: 'Base Map'},
   {value: 1, label: 'Node Distance'},
-  {value: 2, label: 'Traffic'},
+  {value: 2, label: 'Average Speed'},
   {value: 3, label: 'Isochronic Map'}
 ]
 
 const Controls = ({
   city,
-  transition,
-  setTransition,
   mapType,
   setMapType,
   hour,
   setHour,
   setCity
-}) => {
-  const handleChangeCity = e => {setCity(e.target.value)}
-  const handleChangeHour = e => {setHour(Number(e.target.value))}
-  const handleChangeMapType = e => {setMapType(Number(e.target.value))}
-  const handleChangeTransition = e => {setTransition(e.target.checked)}
-
-  return <Block className='controls' style={{
+}) => (
+  <Block className='controls' style={{
     position: 'fixed',
     top: 20,
     left: 20,
@@ -77,10 +69,7 @@ const Controls = ({
         onChange={({value}) => setHour(Number(value))}
       />
     </FormControl>
-    <Checkbox checked={transition} onChange={() => setTransition(!transition)}>
-      transition
-    </Checkbox>
-    </Block>;
-};
+  </Block>
+);
 
 export default Controls;
