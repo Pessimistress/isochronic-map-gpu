@@ -4,8 +4,8 @@ import {Provider as StyletronProvider} from 'styletron-react';
 import {LightTheme, BaseProvider} from 'baseui';
 import {Spinner} from 'baseui/spinner';
 import citySettings from "./city-settings.json";
-import Controls from "./Controls";
-import Map from "./Map";
+import Controls from "./controls";
+import Map from "./map";
 import loadData from './load-data';
 
 const engine = new Styletron();

@@ -8,7 +8,6 @@ import EdgeAttributesTransform from './edge-attributes-transform';
 import NodeAttributesTransform from './node-attributes-transform';
 
 import {ScatterplotLayer, TextLayer} from '@deck.gl/layers';
-import NodeLayer from './node-layer';
 import EdgeLayer from './edge-layer';
 
 import {TRANSITION_FRAMES, ISOCHRONIC_SCALE, ISOCHRONIC_RINGS} from './constants';
@@ -231,12 +230,12 @@ export default class GraphLayer extends CompositeLayer {
         }
       })),
 
-      new NodeLayer(this.getSubLayerProps({
+      new ScatterplotLayer(this.getSubLayerProps({
         id: 'nodes',
         data: data.nodes,
         getPosition: getNodePosition,
 
-        instancePositions: nodeAttributesTransform.nodePositionsBuffer,
+        instancePositions: {buffer: nodeAttributesTransform.nodePositionsBuffer, size: 4},
         instanceFillColors: nodeAttributesTransform.nodeColorsBuffer,
         instanceRadius: nodeAttributesTransform.nodeRadiusBuffer,
 
